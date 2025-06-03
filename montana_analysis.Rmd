@@ -1,0 +1,18 @@
+library(readxl)
+library(ggplot2) 
+library(knitr)
+library(arules)
+library(arulesViz)  
+library(ggmosaic)
+library(mosaic)
+library(vcd)
+library(htmlwidgets)
+
+---
+title: "R Markdown Example"
+author: "Your Name"
+output: html_document
+---
+
+# Introduction
+
