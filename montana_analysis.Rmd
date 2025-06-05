@@ -1,18 +1,90 @@
+---
+title: Association Rules Analysis
+author: Noah MacGillivray
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r setup, include=FALSE}
 library(readxl)
-library(ggplot2) 
+library(ggplot2)
 library(knitr)
 library(arules)
-library(arulesViz)  
+library(arulesViz)
 library(ggmosaic)
 library(mosaic)
 library(vcd)
 library(htmlwidgets)
+```
 
----
-title: "R Markdown Example"
-author: "Your Name"
-output: html_document
----
+**BIT-446 Data Mining Foundations**
 
 # Introduction
+This is a Data Mining Foundations project exploring the economic outlook for the state
+of Montana using Association Rules and the Apriori Algorithm.
+
+## Read in data from excel spreadsheet. 
+This chunk reads in the first 210 rows (eliminating the blank line and note at the 
+end), TODO 
+
+```{r}
+# Read only the first 210 rows
+polling <- read_excel("BIT-446-RS-T3-Poll2.xlsx", n_max = 210)
+
+# Replace values ending with asterisk with NA
+for (col in names(polling)) {
+  # Find values that end with asterisk (like "POL*", "STAT*")
+  asterisk_rows <- grepl("\\*$", polling[[col]])
+  asterisk_rows[is.na(asterisk_rows)] <- FALSE  # Handle NAs separately
+  polling[[col]][asterisk_rows] <- NA
+}
+write.csv(polling, "cleaned_polling_data.csv", row.names = FALSE)
+
+summary(polling)
+head(polling, 10)
+tail(polling, 10)
+```
+
+## Mosaic Plots 
+
+```{r}
+# Disable warnings
+# options(warn = -1)
+
+# Get all variable names except STAT
+other_vars <- names(polling)[names(polling) != "STAT"]
+
+# Define variable-specific reference information
+var_info <- list(
+  "AGE" = "AGE: 1 under 35, 2 35-54, 3 55 and over",
+  "GENDER" = "GENDER: 0 male, 1 female",
+  "INC" = "INC: 1 under $20K, 2 20-35$K, 3 over $35K",
+  "POL" = "POL: 1 Democrat, 2 Independent, 3 Republican",
+  "AREA" = "AREA: 1 Western, 2 Northeastern, 3 Southeastern Montana",
+  "FIN" = "FIN: 1 worse, 2 same, 3 better than a year ago"
+)
+
+# Create separate 2D mosaic plots with STAT on y-axis
+for (var in other_vars) {
+  # Create mosaic plot with STAT on y-axis (put STAT last in formula)
+  mosaic(as.formula(paste("~", var, "+ STAT")),
+         data = polling,
+         main = paste(var, "vs STAT"),
+         xlab = var,
+         ylab = "State Economic Outlook",
+         labeling = labeling_values,
+         gp = gpar(fill = c("lightblue", "lightcoral", "lightgreen"))) # Add colors
+  
+  # Print variable-specific reference information
+  if (var %in% names(var_info)) {
+    cat(var_info[[var]], "\n")
+  }
+
+  # Print STAT reference
+  cat("STAT: 0 better, 1 not better than a year ago\n\n")
+}
+
+# Re-enable warnings
+# options(warn = 0)
+```
+
 
