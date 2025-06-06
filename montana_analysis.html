@@ -491,9 +491,10 @@ for (var in other_vars) {
 <pre class="r"><code># Quick factor conversion for association rules (the key hint!)
 data_factors &lt;- data.frame(lapply(polling, as.factor))
 
-# Clean any NA or missing values if needed
+# Clean any NA or missing values if needed.
 data_factors &lt;- data_factors[complete.cases(data_factors), ]
 
+# Show results of factor conversion and cleaning NA values. 
 head(data_factors, 10)</code></pre>
 <pre><code>##    Age_Group  Gender Income_Level Political_Affiliation Geographic_Area
 ## 1       AGE3 GENDER0         INC2                  POL2           AREA1
@@ -517,6 +518,427 @@ head(data_factors, 10)</code></pre>
 ## 15             FIN3                  STAT1
 ## 16             FIN1                  STAT1
 ## 18             FIN2                  STAT1</code></pre>
+</div>
+<div id="create-itemsets-using-arules-package." class="section level2">
+<h2>Create itemsets using arules package.</h2>
+<p>Support = 0.10 | Confidence = 0.70 minlen = 2 | maxlen = 10</p>
+<pre class="r"><code># Convert to transactions object for arules analysis
+transactions &lt;- as(data_factors, &quot;transactions&quot;)
+
+# Generate frequent itemsets
+cat(&quot;=== GENERATING FREQUENT ITEMSETS ===\n&quot;)</code></pre>
+<pre><code>## === GENERATING FREQUENT ITEMSETS ===</code></pre>
+<pre class="r"><code>frequent_itemsets &lt;- apriori(transactions, 
+                           parameter = list(support = 0.10,
+                                          confidence = 0.70,
+                                          minlen = 2,
+                                          maxlen = 10,
+                                          target = &quot;frequent itemsets&quot;))</code></pre>
+<pre><code>## Apriori
+## 
+## Parameter specification:
+##  confidence minval smax arem  aval originalSupport maxtime support minlen
+##          NA    0.1    1 none FALSE            TRUE       5     0.1      2
+##  maxlen            target  ext
+##      10 frequent itemsets TRUE
+## 
+## Algorithmic control:
+##  filter tree heap memopt load sort verbose
+##     0.1 TRUE TRUE  FALSE TRUE    2    TRUE
+## 
+## Absolute minimum support count: 16 
+## 
+## set item appearances ...[0 item(s)] done [0.00s].
+## set transactions ...[19 item(s), 163 transaction(s)] done [0.00s].
+## sorting and recoding items ... [19 item(s)] done [0.00s].
+## creating transaction tree ... done [0.00s].
+## checking subsets of size 1 2 3 4 done [0.00s].
+## sorting transactions ... done [0.00s].
+## writing ... [150 set(s)] done [0.00s].
+## creating S4 object  ... done [0.00s].</code></pre>
+<pre class="r"><code>cat(&quot;Frequent Itemsets Summary:\n&quot;)</code></pre>
+<pre><code>## Frequent Itemsets Summary:</code></pre>
+<pre class="r"><code>summary(frequent_itemsets)</code></pre>
+<pre><code>## set of 150 itemsets
+## 
+## most frequent items:
+## State_Economic_Outlook=STAT0               Gender=GENDER0 
+##                           49                           31 
+##               Gender=GENDER1   Political_Affiliation=POL1 
+##                           27                           23 
+##            Income_Level=INC2                      (Other) 
+##                           22                          187 
+## 
+## element (itemset/transaction) length distribution:sizes
+##   2   3 
+## 111  39 
+## 
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    2.00    2.00    2.00    2.26    3.00    3.00 
+## 
+## summary of quality measures:
+##     support           count     
+##  Min.   :0.1043   Min.   :17.0  
+##  1st Qu.:0.1166   1st Qu.:19.0  
+##  Median :0.1350   Median :22.0  
+##  Mean   :0.1491   Mean   :24.3  
+##  3rd Qu.:0.1656   3rd Qu.:27.0  
+##  Max.   :0.3313   Max.   :54.0  
+## 
+## includes transaction ID lists: FALSE 
+## 
+## mining info:
+##          data ntransactions support confidence
+##  transactions           163     0.1          1
+##                                                                                                                                    call
+##  apriori(data = transactions, parameter = list(support = 0.1, confidence = 0.7, minlen = 2, maxlen = 10, target = &quot;frequent itemsets&quot;))</code></pre>
+<pre class="r"><code>cat(&quot;\n&quot;)</code></pre>
+<pre class="r"><code># Inspect frequent itemsets (sorted by support)
+cat(&quot;=== FREQUENT ITEMSETS (sorted by support) ===\n&quot;)</code></pre>
+<pre><code>## === FREQUENT ITEMSETS (sorted by support) ===</code></pre>
+<pre class="r"><code># Package conflict; had to reload the arules package. 
+arules::inspect(sort(frequent_itemsets, by = &quot;support&quot;, decreasing = TRUE))</code></pre>
+<pre><code>##       items                            support count
+## [1]   {Gender=GENDER0,                              
+##        State_Economic_Outlook=STAT0} 0.3312883    54
+## [2]   {Gender=GENDER1,                              
+##        State_Economic_Outlook=STAT0} 0.3190184    52
+## [3]   {Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.2822086    46
+## [4]   {Income_Level=INC2,                           
+##        State_Economic_Outlook=STAT0} 0.2760736    45
+## [5]   {Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.2576687    42
+## [6]   {Geographic_Area=AREA2,                       
+##        State_Economic_Outlook=STAT0} 0.2453988    40
+## [7]   {Age_Group=AGE2,                              
+##        State_Economic_Outlook=STAT0} 0.2392638    39
+## [8]   {Gender=GENDER0,                              
+##        Political_Affiliation=POL3}   0.2392638    39
+## [9]   {Gender=GENDER0,                              
+##        Income_Level=INC3}            0.2331288    38
+## [10]  {Age_Group=AGE3,                              
+##        State_Economic_Outlook=STAT0} 0.2269939    37
+## [11]  {Gender=GENDER0,                              
+##        State_Economic_Outlook=STAT1} 0.2269939    37
+## [12]  {Gender=GENDER0,                              
+##        Income_Level=INC2}            0.2269939    37
+## [13]  {Financial_Status=FIN2,                       
+##        State_Economic_Outlook=STAT0} 0.2208589    36
+## [14]  {Age_Group=AGE2,                              
+##        Gender=GENDER0}               0.2208589    36
+## [15]  {Geographic_Area=AREA1,                       
+##        State_Economic_Outlook=STAT0} 0.2208589    36
+## [16]  {Income_Level=INC3,                           
+##        State_Economic_Outlook=STAT0} 0.2147239    35
+## [17]  {Gender=GENDER1,                              
+##        Political_Affiliation=POL1}   0.2147239    35
+## [18]  {Political_Affiliation=POL3,                  
+##        State_Economic_Outlook=STAT0} 0.2085890    34
+## [19]  {Gender=GENDER0,                              
+##        Geographic_Area=AREA3}        0.2024540    33
+## [20]  {Gender=GENDER1,                              
+##        Income_Level=INC2}            0.2024540    33
+## [21]  {Gender=GENDER0,                              
+##        Financial_Status=FIN2}        0.1963190    32
+## [22]  {Political_Affiliation=POL3,                  
+##        Financial_Status=FIN3}        0.1963190    32
+## [23]  {Age_Group=AGE3,                              
+##        Gender=GENDER0}               0.1901840    31
+## [24]  {Political_Affiliation=POL1,                  
+##        Geographic_Area=AREA1}        0.1901840    31
+## [25]  {Age_Group=AGE1,                              
+##        Gender=GENDER1}               0.1901840    31
+## [26]  {Gender=GENDER0,                              
+##        Political_Affiliation=POL1}   0.1901840    31
+## [27]  {Age_Group=AGE3,                              
+##        Income_Level=INC2}            0.1840491    30
+## [28]  {Gender=GENDER0,                              
+##        Geographic_Area=AREA1}        0.1840491    30
+## [29]  {Gender=GENDER0,                              
+##        Financial_Status=FIN1}        0.1840491    30
+## [30]  {Age_Group=AGE1,                              
+##        State_Economic_Outlook=STAT0} 0.1840491    30
+## [31]  {Geographic_Area=AREA3,                       
+##        State_Economic_Outlook=STAT0} 0.1840491    30
+## [32]  {Gender=GENDER0,                              
+##        Financial_Status=FIN3}        0.1779141    29
+## [33]  {Political_Affiliation=POL3,                  
+##        State_Economic_Outlook=STAT1} 0.1779141    29
+## [34]  {Gender=GENDER0,                              
+##        Geographic_Area=AREA2}        0.1717791    28
+## [35]  {Age_Group=AGE2,                              
+##        Income_Level=INC3}            0.1717791    28
+## [36]  {Financial_Status=FIN3,                       
+##        State_Economic_Outlook=STAT0} 0.1717791    28
+## [37]  {Political_Affiliation=POL1,                  
+##        Financial_Status=FIN1}        0.1717791    28
+## [38]  {Financial_Status=FIN3,                       
+##        State_Economic_Outlook=STAT1} 0.1656442    27
+## [39]  {Geographic_Area=AREA3,                       
+##        State_Economic_Outlook=STAT1} 0.1656442    27
+## [40]  {Political_Affiliation=POL2,                  
+##        State_Economic_Outlook=STAT0} 0.1595092    26
+## [41]  {Income_Level=INC1,                           
+##        State_Economic_Outlook=STAT0} 0.1595092    26
+## [42]  {Gender=GENDER1,                              
+##        Financial_Status=FIN3}        0.1595092    26
+## [43]  {Income_Level=INC2,                           
+##        Political_Affiliation=POL3}   0.1595092    26
+## [44]  {Political_Affiliation=POL3,                  
+##        Geographic_Area=AREA2}        0.1533742    25
+## [45]  {Income_Level=INC2,                           
+##        Geographic_Area=AREA1}        0.1533742    25
+## [46]  {Gender=GENDER1,                              
+##        Geographic_Area=AREA1}        0.1533742    25
+## [47]  {Income_Level=INC2,                           
+##        Financial_Status=FIN3}        0.1533742    25
+## [48]  {Gender=GENDER1,                              
+##        Financial_Status=FIN1}        0.1533742    25
+## [49]  {Age_Group=AGE1,                              
+##        State_Economic_Outlook=STAT1} 0.1533742    25
+## [50]  {Age_Group=AGE1,                              
+##        Political_Affiliation=POL3}   0.1533742    25
+## [51]  {Income_Level=INC2,                           
+##        State_Economic_Outlook=STAT1} 0.1533742    25
+## [52]  {Income_Level=INC2,                           
+##        Geographic_Area=AREA3}        0.1533742    25
+## [53]  {Political_Affiliation=POL1,                  
+##        Geographic_Area=AREA1,                       
+##        State_Economic_Outlook=STAT0} 0.1533742    25
+## [54]  {Gender=GENDER1,                              
+##        Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.1533742    25
+## [55]  {Gender=GENDER1,                              
+##        Income_Level=INC1}            0.1472393    24
+## [56]  {Age_Group=AGE3,                              
+##        Financial_Status=FIN2}        0.1472393    24
+## [57]  {Age_Group=AGE1,                              
+##        Financial_Status=FIN3}        0.1472393    24
+## [58]  {Income_Level=INC2,                           
+##        Financial_Status=FIN1}        0.1472393    24
+## [59]  {Age_Group=AGE1,                              
+##        Gender=GENDER0}               0.1472393    24
+## [60]  {Political_Affiliation=POL3,                  
+##        Geographic_Area=AREA3}        0.1472393    24
+## [61]  {Gender=GENDER1,                              
+##        Geographic_Area=AREA3}        0.1472393    24
+## [62]  {Gender=GENDER1,                              
+##        Political_Affiliation=POL3}   0.1472393    24
+## [63]  {Gender=GENDER0,                              
+##        Income_Level=INC2,                           
+##        State_Economic_Outlook=STAT0} 0.1472393    24
+## [64]  {Gender=GENDER1,                              
+##        Geographic_Area=AREA2}        0.1411043    23
+## [65]  {Income_Level=INC3,                           
+##        Political_Affiliation=POL3}   0.1411043    23
+## [66]  {Income_Level=INC3,                           
+##        Political_Affiliation=POL1}   0.1411043    23
+## [67]  {Age_Group=AGE3,                              
+##        Political_Affiliation=POL1}   0.1411043    23
+## [68]  {Age_Group=AGE3,                              
+##        Gender=GENDER1}               0.1411043    23
+## [69]  {Income_Level=INC2,                           
+##        Political_Affiliation=POL1}   0.1411043    23
+## [70]  {Gender=GENDER0,                              
+##        Income_Level=INC3,                           
+##        State_Economic_Outlook=STAT0} 0.1411043    23
+## [71]  {Age_Group=AGE2,                              
+##        Political_Affiliation=POL1}   0.1349693    22
+## [72]  {Age_Group=AGE3,                              
+##        Geographic_Area=AREA3}        0.1349693    22
+## [73]  {Geographic_Area=AREA1,                       
+##        Financial_Status=FIN1}        0.1349693    22
+## [74]  {Age_Group=AGE1,                              
+##        Geographic_Area=AREA1}        0.1349693    22
+## [75]  {Geographic_Area=AREA3,                       
+##        Financial_Status=FIN3}        0.1349693    22
+## [76]  {Age_Group=AGE2,                              
+##        Gender=GENDER0,                              
+##        Income_Level=INC3}            0.1349693    22
+## [77]  {Age_Group=AGE2,                              
+##        Gender=GENDER0,                              
+##        State_Economic_Outlook=STAT0} 0.1349693    22
+## [78]  {Political_Affiliation=POL1,                  
+##        Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.1349693    22
+## [79]  {Gender=GENDER1,                              
+##        Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.1349693    22
+## [80]  {Income_Level=INC2,                           
+##        Political_Affiliation=POL2}   0.1288344    21
+## [81]  {Gender=GENDER0,                              
+##        Political_Affiliation=POL2}   0.1288344    21
+## [82]  {Income_Level=INC2,                           
+##        Financial_Status=FIN2}        0.1288344    21
+## [83]  {Gender=GENDER1,                              
+##        Financial_Status=FIN2}        0.1288344    21
+## [84]  {Age_Group=AGE2,                              
+##        Financial_Status=FIN3}        0.1288344    21
+## [85]  {Age_Group=AGE1,                              
+##        Political_Affiliation=POL1}   0.1288344    21
+## [86]  {Age_Group=AGE1,                              
+##        Income_Level=INC2}            0.1288344    21
+## [87]  {Political_Affiliation=POL1,                  
+##        Geographic_Area=AREA3}        0.1288344    21
+## [88]  {Gender=GENDER0,                              
+##        Geographic_Area=AREA2,                       
+##        State_Economic_Outlook=STAT0} 0.1288344    21
+## [89]  {Gender=GENDER0,                              
+##        Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.1288344    21
+## [90]  {Gender=GENDER1,                              
+##        Income_Level=INC2,                           
+##        State_Economic_Outlook=STAT0} 0.1288344    21
+## [91]  {Age_Group=AGE1,                              
+##        Income_Level=INC1}            0.1226994    20
+## [92]  {Income_Level=INC1,                           
+##        Political_Affiliation=POL1}   0.1226994    20
+## [93]  {Income_Level=INC2,                           
+##        Geographic_Area=AREA2}        0.1226994    20
+## [94]  {Income_Level=INC3,                           
+##        Financial_Status=FIN3}        0.1226994    20
+## [95]  {Geographic_Area=AREA3,                       
+##        Financial_Status=FIN2}        0.1226994    20
+## [96]  {Political_Affiliation=POL1,                  
+##        Financial_Status=FIN2}        0.1226994    20
+## [97]  {Age_Group=AGE2,                              
+##        Geographic_Area=AREA3}        0.1226994    20
+## [98]  {Age_Group=AGE3,                              
+##        Financial_Status=FIN1}        0.1226994    20
+## [99]  {Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT1} 0.1226994    20
+## [100] {Gender=GENDER1,                              
+##        State_Economic_Outlook=STAT1} 0.1226994    20
+## [101] {Age_Group=AGE3,                              
+##        Gender=GENDER0,                              
+##        State_Economic_Outlook=STAT0} 0.1226994    20
+## [102] {Gender=GENDER1,                              
+##        Geographic_Area=AREA1,                       
+##        State_Economic_Outlook=STAT0} 0.1226994    20
+## [103] {Gender=GENDER0,                              
+##        Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.1226994    20
+## [104] {Gender=GENDER0,                              
+##        Political_Affiliation=POL3,                  
+##        State_Economic_Outlook=STAT1} 0.1226994    20
+## [105] {Income_Level=INC3,                           
+##        Geographic_Area=AREA2}        0.1165644    19
+## [106] {Income_Level=INC3,                           
+##        Financial_Status=FIN2}        0.1165644    19
+## [107] {Age_Group=AGE2,                              
+##        Geographic_Area=AREA1}        0.1165644    19
+## [108] {Age_Group=AGE2,                              
+##        Political_Affiliation=POL3}   0.1165644    19
+## [109] {Age_Group=AGE2,                              
+##        Income_Level=INC2}            0.1165644    19
+## [110] {Age_Group=AGE3,                              
+##        Political_Affiliation=POL3}   0.1165644    19
+## [111] {Geographic_Area=AREA1,                       
+##        State_Economic_Outlook=STAT1} 0.1165644    19
+## [112] {Age_Group=AGE1,                              
+##        Financial_Status=FIN1}        0.1165644    19
+## [113] {Gender=GENDER1,                              
+##        Income_Level=INC1,                           
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [114] {Gender=GENDER1,                              
+##        Geographic_Area=AREA2,                       
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [115] {Age_Group=AGE2,                              
+##        Income_Level=INC3,                           
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [116] {Gender=GENDER0,                              
+##        Income_Level=INC3,                           
+##        Political_Affiliation=POL3}   0.1165644    19
+## [117] {Gender=GENDER0,                              
+##        Financial_Status=FIN2,                       
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [118] {Age_Group=AGE3,                              
+##        Gender=GENDER0,                              
+##        Income_Level=INC2}            0.1165644    19
+## [119] {Age_Group=AGE3,                              
+##        Income_Level=INC2,                           
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [120] {Gender=GENDER1,                              
+##        Political_Affiliation=POL1,                  
+##        Geographic_Area=AREA1}        0.1165644    19
+## [121] {Gender=GENDER0,                              
+##        Political_Affiliation=POL3,                  
+##        Financial_Status=FIN3}        0.1165644    19
+## [122] {Income_Level=INC2,                           
+##        Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [123] {Gender=GENDER0,                              
+##        Political_Affiliation=POL3,                  
+##        State_Economic_Outlook=STAT0} 0.1165644    19
+## [124] {Political_Affiliation=POL2,                  
+##        Financial_Status=FIN2}        0.1104294    18
+## [125] {Age_Group=AGE3,                              
+##        Geographic_Area=AREA2}        0.1104294    18
+## [126] {Geographic_Area=AREA2,                       
+##        Financial_Status=FIN1}        0.1104294    18
+## [127] {Age_Group=AGE1,                              
+##        Geographic_Area=AREA2}        0.1104294    18
+## [128] {Income_Level=INC3,                           
+##        State_Economic_Outlook=STAT1} 0.1104294    18
+## [129] {Income_Level=INC3,                           
+##        Geographic_Area=AREA3}        0.1104294    18
+## [130] {Age_Group=AGE2,                              
+##        Gender=GENDER1}               0.1104294    18
+## [131] {Political_Affiliation=POL1,                  
+##        Financial_Status=FIN3}        0.1104294    18
+## [132] {Political_Affiliation=POL3,                  
+##        Geographic_Area=AREA2,                       
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [133] {Income_Level=INC3,                           
+##        Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [134] {Age_Group=AGE3,                              
+##        Financial_Status=FIN2,                       
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [135] {Age_Group=AGE2,                              
+##        Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [136] {Age_Group=AGE3,                              
+##        Political_Affiliation=POL1,                  
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [137] {Age_Group=AGE1,                              
+##        Gender=GENDER1,                              
+##        State_Economic_Outlook=STAT0} 0.1104294    18
+## [138] {Income_Level=INC1,                           
+##        Financial_Status=FIN1}        0.1042945    17
+## [139] {Geographic_Area=AREA2,                       
+##        Financial_Status=FIN2}        0.1042945    17
+## [140] {Age_Group=AGE2,                              
+##        Financial_Status=FIN2}        0.1042945    17
+## [141] {Financial_Status=FIN2,                       
+##        State_Economic_Outlook=STAT1} 0.1042945    17
+## [142] {Age_Group=AGE3,                              
+##        State_Economic_Outlook=STAT1} 0.1042945    17
+## [143] {Geographic_Area=AREA1,                       
+##        Financial_Status=FIN3}        0.1042945    17
+## [144] {Income_Level=INC2,                           
+##        Political_Affiliation=POL2,                  
+##        State_Economic_Outlook=STAT0} 0.1042945    17
+## [145] {Gender=GENDER1,                              
+##        Financial_Status=FIN2,                       
+##        State_Economic_Outlook=STAT0} 0.1042945    17
+## [146] {Age_Group=AGE2,                              
+##        Gender=GENDER1,                              
+##        State_Economic_Outlook=STAT0} 0.1042945    17
+## [147] {Age_Group=AGE3,                              
+##        Gender=GENDER1,                              
+##        State_Economic_Outlook=STAT0} 0.1042945    17
+## [148] {Geographic_Area=AREA1,                       
+##        Financial_Status=FIN1,                       
+##        State_Economic_Outlook=STAT0} 0.1042945    17
+## [149] {Age_Group=AGE1,                              
+##        Gender=GENDER1,                              
+##        Financial_Status=FIN3}        0.1042945    17
+## [150] {Gender=GENDER0,                              
+##        Geographic_Area=AREA3,                       
+##        State_Economic_Outlook=STAT0} 0.1042945    17</code></pre>
+<pre class="r"><code>cat(&quot;\n&quot;)</code></pre>
 </div>
 </div>
 

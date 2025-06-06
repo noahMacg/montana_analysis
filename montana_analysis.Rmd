@@ -101,9 +101,10 @@ a factor type. It then removes the rows which have empty frames (NA).
 # Quick factor conversion for association rules (the key hint!)
 data_factors <- data.frame(lapply(polling, as.factor))
 
-# Clean any NA or missing values if needed
+# Clean any NA or missing values if needed.
 data_factors <- data_factors[complete.cases(data_factors), ]
 
+# Show results of factor conversion and cleaning NA values. 
 head(data_factors, 10)
 
 ```
@@ -113,7 +114,28 @@ Support = 0.10 | Confidence = 0.70
 minlen = 2 | maxlen = 10
 
 ```{R}
+# Convert to transactions object for arules analysis
+transactions <- as(data_factors, "transactions")
 
+# Generate frequent itemsets
+cat("=== GENERATING FREQUENT ITEMSETS ===\n")
+frequent_itemsets <- apriori(transactions, 
+                           parameter = list(support = 0.10,
+                                          confidence = 0.70,
+                                          minlen = 2,
+                                          maxlen = 10,
+                                          target = "frequent itemsets"))
+
+cat("Frequent Itemsets Summary:\n")
+summary(frequent_itemsets)
+cat("\n")
+
+# Inspect frequent itemsets (sorted by support)
+cat("=== FREQUENT ITEMSETS (sorted by support) ===\n")
+
+# Package conflict; had to reload the arules package. 
+arules::inspect(sort(frequent_itemsets, by = "support", decreasing = TRUE))
+cat("\n")
 
 
 
