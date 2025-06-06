@@ -1,4 +1,4 @@
-"AGE","GENDER","INC","POL","AREA","FIN","STAT"
+"Age_Group","Gender","Income_Level","Political_Affiliation","Geographic_Area","Financial_Status","State_Economic_Outlook"
 "AGE3","GENDER0","INC2","POL2","AREA1","FIN2","STAT1"
 "AGE2","GENDER0","INC3","POL3","AREA1","FIN3","STAT1"
 "AGE1","GENDER0","INC2",NA,"AREA1","FIN2","STAT1"

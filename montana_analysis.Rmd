@@ -37,6 +37,11 @@ for (col in names(polling)) {
   asterisk_rows[is.na(asterisk_rows)] <- FALSE  # Handle NAs separately
   polling[[col]][asterisk_rows] <- NA
 }
+
+# 3. Rename columns for better visualization
+names(polling) <- c("Age_Group", "Gender", "Income_Level",
+                    "Political_Affiliation", "Geographic_Area",
+                    "Financial_Status", "State_Economic_Outlook")
 write.csv(polling, "cleaned_polling_data.csv", row.names = FALSE)
 
 summary(polling)
@@ -51,24 +56,24 @@ tail(polling, 10)
 # options(warn = -1)
 
 # Get all variable names except STAT
-other_vars <- names(polling)[names(polling) != "STAT"]
+other_vars <- names(polling)[names(polling) != "State_Economic_Outlook"]
 
 # Define variable-specific reference information
 var_info <- list(
-  "AGE" = "AGE: 1 under 35, 2 35-54, 3 55 and over",
-  "GENDER" = "GENDER: 0 male, 1 female",
-  "INC" = "INC: 1 under $20K, 2 20-35$K, 3 over $35K",
-  "POL" = "POL: 1 Democrat, 2 Independent, 3 Republican",
-  "AREA" = "AREA: 1 Western, 2 Northeastern, 3 Southeastern Montana",
-  "FIN" = "FIN: 1 worse, 2 same, 3 better than a year ago"
+  "Age_Group" = "AGE: 1 under 35, 2 35-54, 3 55 and over",
+  "Gender" = "GENDER: 0 male, 1 female",
+  "Income_Level" = "INC: 1 under $20K, 2 20-35$K, 3 over $35K",
+  "Political_Affiliation" = "POL: 1 Democrat, 2 Independent, 3 Republican",
+  "Geographic_Area" = "AREA: 1 Western, 2 Northeastern, 3 Southeastern Montana",
+  "Financial_Status" = "FIN: 1 worse, 2 same, 3 better than a year ago"
 )
 
 # Create separate 2D mosaic plots with STAT on y-axis
 for (var in other_vars) {
   # Create mosaic plot with STAT on y-axis (put STAT last in formula)
-  mosaic(as.formula(paste("~", var, "+ STAT")),
+  mosaic(as.formula(paste("~", var, "+ State_Economic_Outlook")),
          data = polling,
-         main = paste(var, "vs STAT"),
+         main = paste(var, "vs State_Economic_Outlook"),
          xlab = var,
          ylab = "State Economic Outlook",
          labeling = labeling_values,
@@ -87,4 +92,30 @@ for (var in other_vars) {
 # options(warn = 0)
 ```
 
+## Prepare dataframe for item set and association rules analysis. 
+Note: we have already accounted for the frames without information which include and '*'. 
+The following continued the data cleaning by converting each column from character/text to 
+a factor type. It then removes the rows which have empty frames (NA).
 
+```{R}
+# Quick factor conversion for association rules (the key hint!)
+data_factors <- data.frame(lapply(polling, as.factor))
+
+# Clean any NA or missing values if needed
+data_factors <- data_factors[complete.cases(data_factors), ]
+
+head(data_factors, 10)
+
+```
+
+## Create itemsets using arules package.
+Support = 0.10 | Confidence = 0.70
+minlen = 2 | maxlen = 10
+
+```{R}
+
+
+
+
+
+```
