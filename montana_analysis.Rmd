@@ -97,7 +97,7 @@ Note: we have already accounted for the frames without information which include
 The following continued the data cleaning by converting each column from character/text to 
 a factor type. It then removes the rows which have empty frames (NA).
 
-```{R}
+```{r}
 # Quick factor conversion for association rules (the key hint!)
 data_factors <- data.frame(lapply(polling, as.factor))
 
@@ -113,13 +113,13 @@ head(data_factors, 10)
 Support = 0.10 | Confidence = 0.70
 minlen = 2 | maxlen = 10
 
-```{R}
+```{r}
 # Convert to transactions object for arules analysis
 transactions <- as(data_factors, "transactions")
 
 # Generate frequent itemsets
 cat("=== GENERATING FREQUENT ITEMSETS ===\n")
-frequent_itemsets <- apriori(transactions, 
+frequent_itemsets <- apriori(transactions,
                            parameter = list(support = 0.10,
                                           confidence = 0.70,
                                           minlen = 2,
@@ -132,12 +132,51 @@ cat("\n")
 
 # Inspect frequent itemsets (sorted by support)
 cat("=== FREQUENT ITEMSETS (sorted by support) ===\n")
-
-# Package conflict; had to reload the arules package. 
-arules::inspect(sort(frequent_itemsets, by = "support", decreasing = TRUE))
 cat("\n")
 
+# Sort the itemsets by support for easy viewing. 
+frequent_itemsets_sorted <- sort(frequent_itemsets, by = "support", decreasing = TRUE)
 
+# Package conflict; had to reload the arules package. 
+arules::inspect(frequent_itemsets_sorted)
 
+```
 
+## Create interactive inspection 
+
+```{r}
+# Create interactive inspection
+cat("=== CREATING INTERACTIVE HTML EXPORT ===\n")
+itemsets_interactive <- inspectDT(frequent_itemsets_sorted)
+
+# Display in RStudio viewer/browser
+itemsets_interactive
+
+# Export to HTML file
+htmlwidgets::saveWidget(itemsets_interactive, 
+                       file = "item_sets.html",
+                       selfcontained = TRUE)
+```
+
+## Association rules analysis using arules package
+
+```{r}
+# Create association rules with STAT as consequent
+rules <- apriori(transactions,
+                parameter = list(
+                  supp = 0.05,      # Experiment with these values
+                  conf = 0.60,      # Experiment with these values
+                  minlen = 1,
+                  maxlen = 10,
+                  target = "rules"
+                ),
+                appearance = list(
+                  rhs = c("State_Economic_Outlook=STAT0", "State_Economic_Outlook=STAT1"),
+                  default = "lhs"
+                ))
+
+# Filter rules with lift > 1.3
+high_lift_rules <- subset(rules, lift > 1.3)
+
+arules::inspect(high_lift_rules)
 ```
