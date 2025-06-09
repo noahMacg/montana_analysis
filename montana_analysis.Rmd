@@ -19,42 +19,44 @@ library(htmlwidgets)
 **BIT-446 Data Mining Foundations**
 
 # Introduction
-This is a Data Mining Foundations project exploring the economic outlook for the state
-of Montana using Association Rules and the Apriori Algorithm.
+This is a Data Mining Foundations project that explores the economic outlook for the state
+of Montana using Association Rules and the apriori algorithm.
 
-## Read in data from excel spreadsheet. 
-This chunk reads in the first 210 rows (eliminating the blank line and note at the 
-end), TODO 
+## Data import  
+This chunk reads in the first 210 rows eliminating the blank line and note at the 
+end and changes the column names to terms that are more understandable. The summary for 
+the data frame is shown with the 10 first and last rows for confirmation of data read 
+in and visualization. 
 
 ```{r}
 # Read only the first 210 rows
 polling <- read_excel("BIT-446-RS-T3-Poll2.xlsx", n_max = 210)
 
-# Replace values ending with asterisk with NA
-for (col in names(polling)) {
-  # Find values that end with asterisk (like "POL*", "STAT*")
-  asterisk_rows <- grepl("\\*$", polling[[col]])
-  asterisk_rows[is.na(asterisk_rows)] <- FALSE  # Handle NAs separately
-  polling[[col]][asterisk_rows] <- NA
-}
+
 
 # 3. Rename columns for better visualization
 names(polling) <- c("Age_Group", "Gender", "Income_Level",
                     "Political_Affiliation", "Geographic_Area",
                     "Financial_Status", "State_Economic_Outlook")
-write.csv(polling, "cleaned_polling_data.csv", row.names = FALSE)
 
+
+# Shows summary
 summary(polling)
+
+
+# Prints the 10 first and last rows in the df.
 head(polling, 10)
 tail(polling, 10)
 ```
 
 ## Mosaic Plots 
+**In this chunk we start by gathering all the variable names that are not 
+State_Economic_Outlook and place them in a vector to use for output with the plot. 
+We then use the mosaic plot () to show the results of the association of each variable 
+with the economic outlook. The variable information is then printed for each iteration f
+or easier reference.**
 
 ```{r}
-# Disable warnings
-# options(warn = -1)
-
 # Get all variable names except STAT
 other_vars <- names(polling)[names(polling) != "State_Economic_Outlook"]
 
@@ -67,8 +69,7 @@ var_info <- list(
   "Geographic_Area" = "AREA: 1 Western, 2 Northeastern, 3 Southeastern Montana",
   "Financial_Status" = "FIN: 1 worse, 2 same, 3 better than a year ago"
 )
-
-# Create separate 2D mosaic plots with STAT on y-axis
+# Loops through all columns and compares to STAT
 for (var in other_vars) {
   # Create mosaic plot with STAT on y-axis (put STAT last in formula)
   mosaic(as.formula(paste("~", var, "+ State_Economic_Outlook")),
@@ -77,8 +78,9 @@ for (var in other_vars) {
          xlab = var,
          ylab = "State Economic Outlook",
          labeling = labeling_values,
-         gp = gpar(fill = c("lightblue", "lightcoral", "lightgreen"))) # Add colors
-  
+         gp = gpar(fill =
+                     c("lightblue", "lightcoral", "lightgreen"))) 
+
   # Print variable-specific reference information
   if (var %in% names(var_info)) {
     cat(var_info[[var]], "\n")
@@ -87,24 +89,50 @@ for (var in other_vars) {
   # Print STAT reference
   cat("STAT: 0 better, 1 not better than a year ago\n\n")
 }
-
-# Re-enable warnings
-# options(warn = 0)
 ```
 
 ## Prepare dataframe for item set and association rules analysis. 
-Note: we have already accounted for the frames without information which include and '*'. 
-The following continued the data cleaning by converting each column from character/text to 
-a factor type. It then removes the rows which have empty frames (NA).
+
+The following replaces missing values with 'NA', cleans the rows with 
+empty values, does a calculation to show data loss after cleaning, and 
+proceeds to change character/text to a factor type to allow apriori 
+algorithm calculations. 
+
+There was approximately a 78% data retention after cleaning which was found 
+to most likely be sufficient for association analysis and subsequently have
+better data quality and associations.  
+
 
 ```{r}
-# Quick factor conversion for association rules (the key hint!)
-data_factors <- data.frame(lapply(polling, as.factor))
+
+# Replace values ending with asterisk with NA
+for (col in names(polling)) {
+
+  # Find values that end with asterisk
+  asterisk_rows <- grepl("\\*$", polling[[col]])
+  asterisk_rows[is.na(asterisk_rows)] <- FALSE  # Handle NAs separately
+  polling[[col]][asterisk_rows] <- NA
+}
+
+# Row count pre cleaning
+row_count <- nrow(polling)
+cat("Row count before cleaning:", row_count)
 
 # Clean any NA or missing values if needed.
-data_factors <- data_factors[complete.cases(data_factors), ]
+polling <- polling[complete.cases(polling), ]
 
-# Show results of factor conversion and cleaning NA values. 
+# Row count after cleaning
+row_count_na_removed <- nrow(polling)
+cat("Row count after cleaning: ", row_count_na_removed)
+
+# Data loss calculation
+data_loss <- (row_count_na_removed / row_count)
+cat("Data retained after cleaning", data_loss)
+
+# Quick factor conversion for association rules
+data_factors <- data.frame(lapply(polling, as.factor))
+
+# Show results of factor conversion and cleaning NA values.
 head(data_factors, 10)
 
 ```
@@ -120,11 +148,11 @@ transactions <- as(data_factors, "transactions")
 # Generate frequent itemsets
 cat("=== GENERATING FREQUENT ITEMSETS ===\n")
 frequent_itemsets <- apriori(transactions,
-                           parameter = list(support = 0.10,
-                                          confidence = 0.70,
-                                          minlen = 2,
-                                          maxlen = 10,
-                                          target = "frequent itemsets"))
+                             parameter = list(support = 0.10,
+                                              confidence = 0.70,
+                                              minlen = 2,
+                                              maxlen = 10,
+                                              target = "frequent itemsets"))
 
 cat("Frequent Itemsets Summary:\n")
 summary(frequent_itemsets)
@@ -134,10 +162,11 @@ cat("\n")
 cat("=== FREQUENT ITEMSETS (sorted by support) ===\n")
 cat("\n")
 
-# Sort the itemsets by support for easy viewing. 
-frequent_itemsets_sorted <- sort(frequent_itemsets, by = "support", decreasing = TRUE)
+# Sort the itemsets by support for easy viewing.
+frequent_itemsets_sorted <- sort(frequent_itemsets,
+                                 by = "support", decreasing = TRUE)
 
-# Package conflict; had to reload the arules package. 
+# Package conflict; had to reload the arules package.
 arules::inspect(frequent_itemsets_sorted)
 
 ```
@@ -153,45 +182,225 @@ itemsets_interactive <- inspectDT(frequent_itemsets_sorted)
 itemsets_interactive
 
 # Export to HTML file
-htmlwidgets::saveWidget(itemsets_interactive, 
-                       file = "item_sets.html",
-                       selfcontained = TRUE)
+htmlwidgets::saveWidget(itemsets_interactive,
+                        file = "item_sets.html",
+                        selfcontained = TRUE)
 ```
 
-## Association rules analysis using arules package and scatterplot
-
+## Association rules analysis using apriori an and scatterplots
+This chunk has two main loops; one loop creates different association 
+analysis for different support levels to find where the most valuable 
+information is; the other loop uses the optimal support value and loops
+through confidence levels to find a good match. It prints a scatter plot
+in each iteration. 
 ```{r}
 
-fixed_confidence < 
-# Create association rules with STAT as consequent
-rules <- apriori(transactions,
-                  parameter = list(
-                  supp = 0.05,      # Experiment with these values
-                  conf = 0.60,      # Experiment with these values
-                  minlen = 1,
-                  maxlen = 10,
-                  target = "rules"
-                ),
-                appearance = list(
-                  rhs = c("State_Economic_Outlook=STAT0", "State_Economic_Outlook=STAT1"),
-                  default = "lhs"
-                ))
+support_range <- seq(0.02, 0.08, by = 0.02)
+
+for (supp in support_range) {
+  # Create association rules with STAT as consequent
+  rules <- apriori(transactions,
+                   parameter = list(
+                     supp = supp,      # Experiment with these values
+                     conf = 0.60,      # Experiment with these values
+                     minlen = 1,
+                     maxlen = 10,
+                     target = "rules"
+                   ),
+                   appearance = list(
+                     rhs = c("State_Economic_Outlook=STAT0"),
+                     default = "lhs"
+                   ))
+
+  # Filter rules with lift > 1.3
+  high_lift_rules <- subset(rules, lift > 1.3)
+
+  if (length(high_lift_rules) > 0) {
+    cat("## Support =", supp, "\n\n")
+    cat("Found", length(high_lift_rules),
+        "high-lift rules for support =", supp, "\n")
+
+    arules::inspect(head(high_lift_rules, 10))
+
+
+    # Create scatterplot with support x-axis, confidence y-axis, colored by lift
+    print(plot(high_lift_rules,
+      method = "scatterplot",
+      measure = c("support", "confidence"),
+      shading = "lift",
+      main = "Association Rules Scatterplot",
+    ))
+  } else {
+    cat("No rules with lift > 1.3 found for support =", supp, "\n")
+  }
+}
+confidence_range <- seq(0.9, 0.5, by = -0.1)
+
+for (conf in confidence_range) {
+  # Create association rules with STAT as consequent
+  rules <- apriori(transactions,
+                   parameter = list(
+                     supp = 0.02,      # Experiment with these values
+                     conf = conf,      # Experiment with these values
+                     minlen = 1,
+                     maxlen = 10,
+                     target = "rules"
+                   ),
+                   appearance = list(
+                     rhs = c("State_Economic_Outlook=STAT0"),
+                     default = "lhs"
+                   ))
+
+  # Filter rules with lift > 1.3
+  high_lift_rules <- subset(rules, lift > 1.3)
+
+  if (length(high_lift_rules) > 0) {
+    cat("## Confidence =", conf, "\n\n")
+    cat("Found", length(high_lift_rules),
+        "high-lift rules for confidence =", conf, "\n")
+
+    arules::inspect(head(high_lift_rules, 10))
+
+
+    # Create scatterplot with support x-axis, confidence y-axis, colored by lift
+    print(plot(high_lift_rules,
+      method = "scatterplot",
+      measure = c("support", "confidence"),
+      shading = "lift",
+      main = "Association Rules Scatterplot",
+    ))
+  } else {
+    cat("No rules with lift > 1.3 found for confidence =", conf, "\n")
+  }
+}
+```
+
+## Interactive Association Rules Inspection and Export
+```{r}
+optimal_rules <- apriori(transactions,
+                         parameter = list(
+                           supp = 0.02,
+                           conf = 0.70,
+                           minlen = 1,
+                           maxlen = 10,
+                           target = "rules"
+                         ),
+                         appearance = list(
+                           rhs = c("State_Economic_Outlook=STAT0"),
+                           default = "lhs"
+                         ))
 
 # Filter rules with lift > 1.3
-high_lift_rules <- subset(rules, lift > 1.3)
+high_lift_rules <- subset(optimal_rules, lift > 1.3)
 
-arules::inspect(high_lift_rules)
+# Sort rules by lift for better analysis
+high_lift_rules_sorted <- sort(high_lift_rules, by = "lift", decreasing = TRUE)
+
+cat("=== CREATING INTERACTIVE RULES INSPECTION ===\n")
+cat("Total rules found:", length(high_lift_rules_sorted), "\n")
+
+# Create interactive HTML using inspectDT
+rules_interactive <- inspectDT(high_lift_rules_sorted)
+
+# Display in RStudio viewer/browser
+rules_interactive
+
+# Export to HTML file named "rules.html" as requested
+htmlwidgets::saveWidget(rules_interactive,
+                        file = "rules.html",
+                        selfcontained = TRUE)
+
+cat("Interactive rules exported to 'rules.html'\n")
+cat("You can now open this file in your web browser.\n")
 ```
 
-## Create a scatterplot for each rule
+## Conclusion and Analysis 
+This analysis was from a random sample of Montana residents and was performed to decide if 
+residents of Montana should expect a better economic outlook compared to last year. The poll 
+gathered six categories of personal information, and asked if the individual believed the 
+economic outlook would be better in the coming year. Mosaic plots were used to show raw data 
+in each category related to the projected economic outlook, item set “baskets” were created 
+using the arules package, and an association rules analysis was provided using the apriori 
+algorithm with associated scatter plots. 
 
-```{r}
-# Create scatterplot with support on x-axis, confidence on y-axis, colored by lift
-plot(high_lift_rules,
-     method = "scatterplot",
-     measure = c("support", "confidence"),
-     shading = "lift",
-     main = "Association Rules Scatterplot",
-     xlab = "Support",
-     ylab = "Confidence")
-```
+### Mosaic Plot Analysis:
+The plots represent each category of variables in relation to the economic outlook. The 
+x-axis shows (in order) missing values, better, not better (economic outlook than a year ago).
+The y-axis is each category divided into their sub categories. 
+
+Visualizing the plots lead to a general assumption of minimal to moderate (depending on the category) 
+data loss from empty fields.
+
+***General impressions for each category related to economic outlook (better, not better in 1 yr.):***
+
+**Age Group:** Outlook for younger ages about even;
+outlook for middle age better; outlook for 55+ worse. 
+
+**Gender:** Marginally better outlook for males; moderately better
+outlook for females. 
+
+**Income Level:** Lower income - better outlook; moderate income - better outlook; higher 
+income - better 
+outlook. 
+
+**Political Affiliation:** Democrat - better outlook; Independent - better 
+outlook (highest out of the three); Republican - marginally better outlook. 
+
+**Geographic Area (Montana):** Western - better outlook; Northeastern – better outlook 
+(highest of the three); Southeastern - better (marginally). 
+
+**Financial Status a Year Ago:** Most of those who were worse a year ago predicted to be 
+better next year; those (2/3) who were about the same a year ago predicted to be better next 
+year; those who were better a year ago were split equally predicting to be better / worse 
+next year. 
+
+**Broadly, categories which appeared more optimistic in the financial outlook for next year:**
+
+1. Middle aged
+
+2. Females
+
+3. In the middle income bracket
+                                                                                                                                        
+4. Independents 
+
+5. Live in the NE
+
+6. Were worse off than last year
+
+### Item Sets 
+The top 7 items sets had support ranging from 0.245-0.331 with associated consequent of positive
+economic outlook. The first two were male and female; third was democrat; fourth, income 20-35$K; 
+fifth, financial status worse than last year; sixth, NE geographic area; and seventh 35-54 years old. 
+
+Some of these correlated with our assumptions based on the mosaic plot and a couple (gender) were already
+assumed to be high based on their low category numbers. From this we may be able to draw some 
+correlations between these categories and positive economic outlook. If you go down the list and 
+continue to evaluate the antecedent and consequent we can observe some other interesting correlations 
+that such as gender and political affiliation, gender and income level or financial status, and 
+political affiliation and financial status.
+
+### Apriori analysis
+After trying different values for support and confidence and looking at the scatter plots, a support 
+value of 0.02 and confidence value of 0.70 appeared to give the most meaningful associations. The noise
+was reduced and showed possible associations in the support of ~0.05 and 100% confidence. 
+
+Looking at the interactive HTML of the results of apriori analysis was enlightening. It took me a while, but 
+believe I started to see some of the patterns arise. I sorted first on lift and there were quite a few categories to 
+evaluate. This first item that stood out was the POL2 (Independent) + AREA2 (NE). It had the highest combined
+lift (1.538) and support (0.074). This would most likely be our best indicator, and I'm guessing the top 6th
+dot on the graph. Looking at the rest of the data, there was a cluster of 7 antecedents around support of ~0.05 and
+confidence of 100%. The support is on the lower side, but there seemed to be a corelation between GENDER1 (female)
+income levels (moderate to high) and geographic location. Going down the list there appears to be quite a 
+bit of overlap, so that may indicate a corelation between categories that are related and giving us the same 
+information. 
+
+Comparing our original mosaic graphs to these results, we can see that there was strong evidence of both positive 
+outlook for our highest combined lift and support (POL2 (Independent) + AREA2 (NE)). The outlook was 29:8 for 
+political affiliation and 42:12 for geographic area. 
+
+Final notes: My overall intuition is that we could expect Montana to have a positive economic outlook in the next 
+year. To investigate this more thoroughly I would imagine we would need to know more about the population 
+density related to those that are expecting a better outcome. With that information would could draw better 
+conclusions. 
+
